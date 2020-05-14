@@ -25,6 +25,7 @@ public class EventBus {
     public EventBus(String chartName, ExecutorService executor) {
         this.executor = executor;
         this.chartName = chartName;
+        this.dispatcher = new DispatcherService();
     }
 
     void onSubscribe(Listener listener) {
@@ -47,7 +48,7 @@ public class EventBus {
      * @param payload
      */
     private void sendEventToSubscriber(String payload) {
-        List<Subscriber> validSubscribers = subscribers.stream().filter(subs -> subs.getListener() == null).collect(toList());
+        List<Subscriber> validSubscribers = subscribers.stream().filter(subs -> subs.getListener() != null).collect(toList());
         dispatcher.dispatch(payload, validSubscribers.iterator());
     }
 

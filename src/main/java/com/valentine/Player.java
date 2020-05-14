@@ -25,21 +25,21 @@ public class Player implements Listener {
         sendMessage(message);
     }
 
-    private void sendMessage(String message) {
+    public void sendMessage(String message) {
         EventBus eventBus;
         if ((eventBus = bus.get()) == null) {
             return;
         }
 
-        int sendCount = sendIncrementCount.getAndIncrement();
-        if (sendCount == 10 && (receiveIncrementCount.get() == 10)) {
+        if (( sendIncrementCount.getAndIncrement() == 10) && (receiveIncrementCount.get() == 10)) {
             eventBus.onUnSubscribe(this);
         }
+        int sendCount = sendIncrementCount.getAndIncrement();
 
         eventBus.sendEventToSubscriber(new Publisher() {
             @Override
             public String getPayload() {
-                String newMessage = message + "" + sendCount;
+                String newMessage = message + " " + sendCount;
                 System.out.println(String.format("thread: %d, name: %s , send message: %s ", Thread.currentThread().getId(), name, newMessage));
                 return newMessage;
             }
@@ -53,4 +53,12 @@ public class Player implements Listener {
     public void setName(String name) {
         this.name = name;
     }
+
+    public void subscribeToEventBus(EventBus bus) {
+        this.bus.set(bus);
+    }
+    public void unSubscribeToEventBus(EventBus bus) {
+        this.bus.set(null);
+    }
+
 }
