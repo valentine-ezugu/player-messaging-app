@@ -1,29 +1,26 @@
 package com.valentine;
 
+import java.io.OutputStream;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
 public class DispatcherService implements Dispatcher {
 
-    ThreadLocal<Queue<DispatcherService.Event>> subscriberThread = ThreadLocal.withInitial(ArrayDeque::new);
+    Queue<DispatcherService.Event> subscriberThread = new ArrayDeque<>();
 
     @Override
     public void dispatch(String payload, Iterator<Subscriber> subscribers) {
-        //get events of init
-        Queue<Event> eventsThread = subscriberThread.get();
+        Queue<Event> eventsThread = subscriberThread;
         eventsThread.offer(new Event(payload, subscribers));
-        try {
             DispatcherService.Event eventQueue;
             while ((eventQueue = eventsThread.poll()) != null) {
 
-                for (; eventQueue.subscribers.hasNext() ; ) {
-                        eventQueue.subscribers.next().sendEvent(eventQueue.payload);
+                for (; eventQueue.subscribers.hasNext(); ) {
+                    eventQueue.subscribers.next().sendEvent(eventQueue.payload);
                 }
             }
-        } finally {
-            eventsThread.remove();
-        }
+
     }
 
     private static class Event {

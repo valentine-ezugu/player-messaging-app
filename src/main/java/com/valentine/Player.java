@@ -1,47 +1,48 @@
 package com.valentine;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
-public class Player implements Listener {
+// the player class is both the subscriber and publisher
+public class Player implements Listener, EventBusAware {
 
-    private final AtomicReference<EventBus> bus = new AtomicReference<>();
-
-    AtomicInteger sendIncrementCount = new AtomicInteger();
-    AtomicInteger receiveIncrementCount = new AtomicInteger();
+    private final EventBus  bus;
+    Integer sendIncrementCount = new Integer(0);
+    Integer receiveIncrementCount = new Integer(0);
     private String name;
 
-    public Player(String name) {
+    public Player(String name, EventBus bus) {
+        this.bus = bus;
         this.name = name;
     }
 
     @Override
     public void onMessage(String message) {
-
         System.out.println(String.format("thread: %d, name: %s , received message: %s ", Thread.currentThread().getId(), name, message));
-
-        receiveIncrementCount.getAndIncrement();
-
+        receiveIncrementCount++;
         sendMessage(message);
     }
 
     public void sendMessage(String message) {
         EventBus eventBus;
-        if ((eventBus = bus.get()) == null) {
+        if ((eventBus = this.bus) == null) {
             return;
         }
-
-        if (( sendIncrementCount.getAndIncrement() == 10) && (receiveIncrementCount.get() == 10)) {
+        int count;
+        if (10 <= (count = ++sendIncrementCount) && (receiveIncrementCount <= 10)) {
             eventBus.onUnSubscribe(this);
         }
-        int sendCount = sendIncrementCount.getAndIncrement();
 
         eventBus.sendEventToSubscriber(new Publisher() {
             @Override
             public String getPayload() {
-                String newMessage = message + " " + sendCount;
+                String newMessage = message+"_" + count;
                 System.out.println(String.format("thread: %d, name: %s , send message: %s ", Thread.currentThread().getId(), name, newMessage));
                 return newMessage;
+            }
+
+            @Override
+            public Predicate<Listener> getExcludes() {
+                return predicate;
             }
         });
     }
@@ -54,11 +55,32 @@ public class Player implements Listener {
         this.name = name;
     }
 
-    public void subscribeToEventBus(EventBus bus) {
-        this.bus.set(bus);
+
+    public Integer getSendIncrementCount() {
+        return sendIncrementCount;
     }
-    public void unSubscribeToEventBus(EventBus bus) {
-        this.bus.set(null);
+
+    public void setSendIncrementCount(Integer sendIncrementCount) {
+        this.sendIncrementCount = sendIncrementCount;
     }
+
+    public Integer getReceiveIncrementCount() {
+        return receiveIncrementCount;
+    }
+
+    public void setReceiveIncrementCount(Integer receiveIncrementCount) {
+        this.receiveIncrementCount = receiveIncrementCount;
+    }
+
+    @Override
+    public void onSubscribe(EventBus bus) {
+        bus = bus;
+    }
+
+    @Override
+    public void onUnsubscribe(EventBus bus) {
+        bus = null;
+    }
+    private final Predicate<Listener> predicate = (listener) -> listener.equals(Player.this);
 
 }
